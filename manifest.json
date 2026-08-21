@@ -1,0 +1,20 @@
+{
+  "name": "OBN Beeksisa Tracking System",
+  "short_name": "OBN Beeksisa",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d90429",
+  "icons": [
+    {
+      "src": "obn-logo.JFIF",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "obn-logo.JFIF",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
