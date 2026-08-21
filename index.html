@@ -4,56 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sirna Hordoffii fi Ramaddii Beeksisaa - OBN</title>
-    
     <!-- App Icon / Web App Setup -->
     <link rel="shortcut icon" href="obn-logo.JFIF" type="image/x-icon">
     <link rel="apple-touch-icon" href="obn-logo.JFIF">
     <meta name="theme-color" content="#d90429">
 
-    <!-- Firebase SDK (Version 9+ Compatible Modular Imports via CDN) -->
+    <!-- Firebase SDK (Version 9+ Modular Imports via CDN) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-        // CONFIGURATION FIREBASE: Settingii Keessan Asitti Bakka Buusa!
+        // FIREBASE CONFIGURATION (FIREBASE KEESSAN INTEGRATED)
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDqF0FZFahin5zfRSMf-ETCu95psowyKBU",
+            authDomain: "obn-weekly-report.firebaseapp.com",
+            databaseURL: "https://obn-weekly-report-default-rtdb.firebaseio.com",
+            projectId: "obn-weekly-report",
+            storageBucket: "obn-weekly-report.firebasestorage.app",
+            messagingSenderId: "445310263395",
+            appId: "1:445310263395:web:4a051aed54b2abdab71856",
+            measurementId: "G-185Z6B98DC"
         };
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
+        // SYNC TO FIREBASE REALTIME DATABASE
         window.syncToFirebase = function(reportData, planData, archiveData) {
-            if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
-                set(ref(database, 'obn_beeksisa/'), {
-                    reportData: reportData,
-                    planData: planData,
-                    archiveData: archiveData,
-                    updatedAt: new Date().toISOString()
-                });
-            }
+            set(ref(database, 'obn_beeksisa/'), {
+                reportData: reportData,
+                planData: planData,
+                archiveData: archiveData,
+                updatedAt: new Date().toISOString()
+            });
         };
 
+        // LISTEN TO REALTIME CHANGES FROM FIREBASE
         window.listenFirebase = function() {
-            if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
-                const dbRef = ref(database, 'obn_beeksisa/');
-                onValue(dbRef, (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        if (data.reportData) localStorage.setItem('obn_beeksisa_data_v2', JSON.stringify(data.reportData));
-                        if (data.planData) localStorage.setItem('obn_karoora_data_v2', JSON.stringify(data.planData));
-                        if (data.archiveData) localStorage.setItem('obn_archives_v2', JSON.stringify(data.archiveData));
-                        window.loadAllTables();
-                        window.updateArchiveDropdown();
-                    }
-                });
-            }
+            const dbRef = ref(database, 'obn_beeksisa/');
+            onValue(dbRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    if (data.reportData) localStorage.setItem('obn_beeksisa_data_v2', JSON.stringify(data.reportData));
+                    if (data.planData) localStorage.setItem('obn_karoora_data_v2', JSON.stringify(data.planData));
+                    if (data.archiveData) localStorage.setItem('obn_archives_v2', JSON.stringify(data.archiveData));
+                    if (typeof window.loadAllTables === 'function') window.loadAllTables();
+                    if (typeof window.updateArchiveDropdown === 'function') window.updateArchiveDropdown();
+                }
+            });
         };
     </script>
 
@@ -603,7 +601,6 @@
     function importFromJSON(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -638,7 +635,6 @@
             alert('Daataan Export godhamuu hin jiru!');
             return;
         }
-
         let csvContent = "\uFEFF";
         csvContent += "--- A. GABAASA RAAWWII ---\n";
         csvContent += "T.L,Guyyaa (A.L.I),Maqaa Dhaabbata,Gosa Hojii,Media,Hanga Maallaqaa,Yeroo Xumuramu,Haala Tamsaasaa\n";
@@ -656,7 +652,6 @@
             ];
             csvContent += rowData.join(",") + "\n";
         });
-
         csvContent += "\n--- B. KAROORA HOJII ---\n";
         csvContent += "T.L,Hojii Karoorfame,Target,Media Focus,Yaada\n";
         planData.forEach((row, i) => {
@@ -669,7 +664,6 @@
             ];
             csvContent += rowData.join(",") + "\n";
         });
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
