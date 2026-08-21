@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="om">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sirna Hordoffii fi Ramaddii Beeksisaa - OBN</title>
+    
+    <!-- App Icon / Web App Setup -->
+    <link rel="shortcut icon" href="obn-logo.JFIF" type="image/x-icon">
+    <link rel="apple-touch-icon" href="obn-logo.JFIF">
+    <meta name="theme-color" content="#d90429">
+
+    <!-- Firebase SDK (Version 9+ Compatible Modular Imports via CDN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        // CONFIGURATION FIREBASE: Settingii Keessan Asitti Bakka Buusa!
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.syncToFirebase = function(reportData, planData, archiveData) {
+            if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                set(ref(database, 'obn_beeksisa/'), {
+                    reportData: reportData,
+                    planData: planData,
+                    archiveData: archiveData,
+                    updatedAt: new Date().toISOString()
+                });
+            }
+        };
+
+        window.listenFirebase = function() {
+            if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                const dbRef = ref(database, 'obn_beeksisa/');
+                onValue(dbRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        if (data.reportData) localStorage.setItem('obn_beeksisa_data_v2', JSON.stringify(data.reportData));
+                        if (data.planData) localStorage.setItem('obn_karoora_data_v2', JSON.stringify(data.planData));
+                        if (data.archiveData) localStorage.setItem('obn_archives_v2', JSON.stringify(data.archiveData));
+                        window.loadAllTables();
+                        window.updateArchiveDropdown();
+                    }
+                });
+            }
+        };
+    </script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #f4f4f6; color: #111111; padding: 20px; padding-bottom: 60px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border-top: 6px solid #d90429; }
+        
+        /* Header & Logo styling */
+        .app-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #d90429; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .logo-container { display: flex; align-items: center; gap: 15px; }
+        .logo-img { width: 70px; height: 70px; object-fit: contain; border-radius: 8px; border: 1px solid #d90429; background: #fff; padding: 2px; }
+        .header-title { color: #111111; font-size: 1.6rem; font-weight: 800; text-transform: uppercase; }
+        
+        /* Responsive Header Grid */
+        .header-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; background: #111111; color: #ffffff; padding: 18px; border-radius: 8px; border-left: 5px solid #d90429; margin-bottom: 25px; }
+        .header-info-item p { margin-bottom: 8px; font-size: 0.95rem; font-weight: 600; }
+        .header-info-item input { width: 100%; padding: 6px 10px; border: 1px solid #d90429; background: #222222; color: #ffffff; border-radius: 4px; font-size: 0.9rem; margin-top: 3px; outline: none; }
+
+        .section-title { color: #d90429; font-size: 1.25rem; margin: 25px 0 12px 0; padding-left: 10px; border-left: 5px solid #111111; text-transform: uppercase; font-weight: 700; }
+
+        /* Archive Card Style */
+        .archive-card { background: #fff5f5; border: 1px solid #d90429; border-radius: 8px; padding: 15px; margin-bottom: 25px; }
+        .archive-grid { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        /* Form Responsive Design */
+        .form-card { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 25px; border-left: 4px solid #d90429; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; color: #111111; }
+        .form-group input, .form-group select, .form-group textarea { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #d90429; }
+        
+        /* Buttons Theme */
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        button, .file-label { padding: 10px 16px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: inline-block; text-align: center; transition: background 0.2s ease; }
+        .btn-primary { background-color: #d90429; color: white; }
+        .btn-primary:hover { background-color: #b00020; }
+        .btn-secondary { background-color: #111111; color: white; }
+        .btn-secondary:hover { background-color: #333333; }
+        .btn-outline { background-color: #ffffff; color: #111111; border: 2px solid #111111; }
+        .btn-outline:hover { background-color: #111111; color: white; }
+        .btn-danger { background-color: #8d0801; color: white; }
+        
+        input[type="file"] { display: none; }
+
+        /* Table Responsive */
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; border: 1px solid #111111; }
+        table { width: 100%; border-collapse: collapse; min-width: 750px; background: #ffffff; }
+        th, td { padding: 12px 10px; border: 1px solid #e0e0e0; text-align: left; font-size: 0.88rem; }
+        th { background-color: #111111; color: white; font-weight: 700; white-space: nowrap; border-bottom: 3px solid #d90429; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .action-btn { padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; }
+
+        /* Signature Grid */
+        .signature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-top: 40px; padding-top: 20px; border-top: 2px dashed #111111; page-break-inside: avoid; }
+        .signature-card { background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #111111; line-height: 2.1; }
+        .signature-card h4 { color: #d90429; margin-bottom: 8px; border-bottom: 2px solid #d90429; display: inline-block; font-weight: 800; }
+
+        /* System Footer */
+        .system-footer {
+            margin-top: 30px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            text-align: center;
+            font-size: 0.82rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        /* PRINT STYLES & OVERFLOW FIXES */
+        @page {
+            size: auto;
+            margin: 12mm 10mm 15mm 10mm;
+        }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; margin: 0; color: black; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
+            .header-info-grid { background: none; color: black; border: 1px solid #000; padding: 10px; }
+            .header-info-item input { border: none; border-bottom: 1px dotted #000; background: transparent; color: black; padding: 0; }
+            .table-responsive { overflow: visible; border: none; }
+            table { min-width: 100%; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            th { background-color: #f0f0f0 !important; color: #000 !important; border-bottom: 2px solid #000 !important; }
+            th, td { border: 1px solid #000 !important; }
+            .signature-grid { border-top: none; page-break-inside: avoid; }
+            .signature-card { background: none; border: 1px solid #000; }
+
+            .system-footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: white;
+                padding: 5px 0;
+                font-size: 0.78rem;
+                color: #000;
+                border-top: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header with OBN Logo -->
+    <div class="app-header">
+        <div class="logo-container">
+            <img src="obn-logo.JFIF" alt="OBN Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/70?text=OBN+Logo';">
+            <div>
+                <h1 class="header-title">OBN - GABAASA RAAWWII FI KAROORA TORBEE BEKSISAA</h1>
+                <p style="font-size: 0.85rem; color: #555; font-weight: 600;">Oromia Broadcasting Network | Adama, Oromia</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="header-info-grid">
+        <div class="header-info-item">
+            <p><strong>Marsaa Torbanii:</strong> <input type="text" id="headerMarsaa" value="Torbee 2ffaa" oninput="saveHeaderInfo()"></p>
+            <p><strong>Guyyaa (A.L.I):</strong> <input type="text" id="headerGuyyaa" placeholder="e.g. 07/12/2018 - 13/12/2018" oninput="saveHeaderInfo()"></p>
+        </div>
+        <div class="header-info-item">
+            <p><strong>Ogeessa Ramaddii fi Hordoffii:</strong> <input type="text" id="headerOgeessa" value="Qajeelaa Hambisaa" oninput="saveHeaderInfo()"></p>
+            <p><strong>Gosa Hojii:</strong> <input type="text" id="headerGosaHojii" value="Og. Ramaddiifi Hordoffii Beeksisaa" oninput="saveHeaderInfo()"></p>
+        </div>
+    </div>
+
+    <!-- KUUSAA TORBANII (WEEKLY ARCHIVE SYSTEM) -->
+    <div class="archive-card no-print">
+        <h3 style="margin-bottom: 10px; font-size: 1rem; color: #d90429;">🗄 Kuusaa Torbanii (Weekly Archives)</h3>
+        <div class="archive-grid">
+            <input type="text" id="archiveName" placeholder="Maqaa Torbee (e.g. Torbee 3ffaa)" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; width: 220px;">
+            <button type="button" class="btn-primary" onclick="saveToArchive()">💾 Torbee Kana Kuusi (Save Archive)</button>
+            <span style="font-weight: bold; margin: 0 10px;">|</span>
+            <select id="archiveSelect" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; width: 200px;">
+                <option value="">-- Torbee Filadhu --</option>
+            </select>
+            <button type="button" class="btn-secondary" onclick="loadFromArchive()">📂 Torban Filatame Banaa</button>
+        </div>
+    </div>
+
+    <!-- Controls / Action Buttons -->
+    <div class="btn-group no-print" style="margin-bottom: 20px;">
+        <button type="button" class="btn-secondary" onclick="window.print()">🖨 Print / PDF Gochi</button>
+        <button type="button" class="btn-outline" onclick="exportToJSON()">💾 Backup (Save File)</button>
+        <label for="importFile" class="file-label btn-outline">📂 File Galchi (Append)</label>
+        <input type="file" id="importFile" accept=".json" onchange="importFromJSON(event)">
+        <button type="button" class="btn-outline" onclick="exportToCSV()">📊 Excel / CSV Export</button>
+        <button type="button" class="btn-danger" onclick="clearAllData()">🗑 Data Hunda Balleessi</button>
+    </div>
+
+    <!-- SECTION A: GABAASA RAAWWII -->
+    <h2 class="section-title">A. GABAASA RAAWWII TORBAN DARBEE</h2>
+    
+    <!-- Form Section Raawwii -->
+    <div class="form-card no-print">
+        <h3 style="margin-bottom: 12px; font-size: 1rem; color: #111;">Galmee Raawwii Beeksisaa Haarawa Galchi</h3>
+        <form id="adForm" onsubmit="event.preventDefault(); addData();">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Guyyaa (A.L.I)</label>
+                    <input type="text" id="guyyaa" placeholder="e.g. 14/12/2018" required>
+                </div>
+                <div class="form-group">
+                    <label>Maqaa Dhaabbataa</label>
+                    <input type="text" id="dhaabbata" placeholder="e.g. Awash Bank" required>
+                </div>
+                <div class="form-group">
+                    <label>Gosa Hojii</label>
+                    <select id="gosaHojii">
+                        <option value="Monitoring">Monitoring</option>
+                        <option value="Ramaddii">Ramaddii</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Media</label>
+                    <select id="media">
+                        <option value="TV">TV</option>
+                        <option value="Radio">Radio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hanga Maallaqaa</label>
+                    <input type="text" id="hanga" placeholder="e.g. 10,000 ETB ama -">
+                </div>
+                <div class="form-group">
+                    <label>Yeroo Xumuramu (A.L.I)</label>
+                    <input type="text" id="xumura" placeholder="e.g. 18/12/2018 ama -">
+                </div>
+                <div class="form-group">
+                    <label>Haala Tamsaasaa</label>
+                    <select id="haala">
+                        <option value="Tamsa’eera">Tamsa’eera</option>
+                        <option value="Tamsa’aa jira">Tamsa’aa jira</option>
+                        <option value="Hitchiitii Qaba">Hitchiitii Qaba</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">+ Raawwii Galmeessi</button>
+        </form>
+    </div>
+
+    <!-- Table Section A -->
+    <div class="table-responsive">
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>T.L</th>
+                    <th>Guyyaa (A.L.I)</th>
+                    <th>Maqaa Dhaabbilee</th>
+                    <th>Gosa Hojii</th>
+                    <th>Media</th>
+                    <th>Hanga Maallaqaa</th>
+                    <th>Yeroo Xumuramu</th>
+                    <th>Haala Tamsaasaa</th>
+                    <th class="no-print">Tarkaanfii</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- SECTION B: KAROORA HOJII TORBAN ITTI AANUU -->
+    <h2 class="section-title">B. KAROORA HOJII TORBAN ITTI AANUU</h2>
+
+    <!-- Form Section Karoora -->
+    <div class="form-card no-print">
+        <h3 style="margin-bottom: 12px; font-size: 1rem; color: #111;">Galmee Karoora Haarawa Galchi</h3>
+        <form id="planForm" onsubmit="event.preventDefault(); addPlanData();">
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Hojii Karoorfame / Tarree Hojii</label>
+                    <input type="text" id="karooraHojii" placeholder="e.g. Beeksisoota haarawa 5 ramaduu fi hordofuu" required>
+                </div>
+                <div class="form-group">
+                    <label>Target / Safartuu</label>
+                    <input type="text" id="karooraTarget" placeholder="e.g. 100% / Beeksisa 5" required>
+                </div>
+                <div class="form-group">
+                    <label>Media Focus</label>
+                    <select id="karooraMedia">
+                        <option value="TV & Radio">TV & Radio</option>
+                        <option value="TV Qofa">TV Qofa</option>
+                        <option value="Radio Qofa">Radio Qofa</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Yaada / Qabxii Addaa</label>
+                    <input type="text" id="karooraYaada" placeholder="e.g. Dhaabbata Awash Bank waliin waliigaltee haareffachuu">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">+ Karoora Galmeessi</button>
+        </form>
+    </div>
+
+    <!-- Table Section B -->
+    <div class="table-responsive">
+        <table id="planTable">
+            <thead>
+                <tr>
+                    <th>T.L</th>
+                    <th>Hojii Karoorfame</th>
+                    <th>Target / Safartuu</th>
+                    <th>Media Focus</th>
+                    <th>Yaada / Qabxii Addaa</th>
+                    <th class="no-print">Tarkaanfii</th>
+                </tr>
+            </thead>
+            <tbody id="planTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-grid">
+        <div class="signature-card">
+            <h4>Kan Qopheesse</h4>
+            <p><strong>Maqaa:</strong> Qajeelaa Hambisaa</p>
+            <p><strong>Gahee Hojii:</strong> Og. Ramaddiifi Hordoffii Beeksisaa</p>
+            <p><strong>Mallattoo:</strong> _____________________</p>
+            <p><strong>Guyyaa (A.L.I):</strong> ________________</p>
+        </div>
+        <div class="signature-card">
+            <h4>Kan Mirkaneesse</h4>
+            <p><strong>Maqaa:</strong> __________________________</p>
+            <p><strong>Gahee Hojii:</strong>_____________________</p>
+            <p><strong>Mallattoo:</strong> ______________________</p>
+            <p><strong>Guyyaa (A.L.I):</strong>__________________</p>
+        </div>
+    </div>
+
+    <!-- Footer Dynamic Section -->
+    <div class="system-footer">
+        System generated by Kejela Hambisa | 0910166955
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'obn_beeksisa_data_v2';
+    const PLAN_STORAGE_KEY = 'obn_karoora_data_v2';
+    const HEADER_STORAGE_KEY = 'obn_beeksisa_header_v2';
+    const ARCHIVE_STORAGE_KEY = 'obn_archives_v2';
+    
+    let reportData = [];
+    let planData = [];
+    let archives = {};
+
+    window.onload = function() {
+        loadHeaderInfo();
+        loadAllTables();
+        updateArchiveDropdown();
+        if(window.listenFirebase) {
+            window.listenFirebase();
+        }
+    };
+
+    function loadHeaderInfo() {
+        const savedHeader = JSON.parse(localStorage.getItem(HEADER_STORAGE_KEY));
+        if (savedHeader) {
+            document.getElementById('headerMarsaa').value = savedHeader.marsaa || 'Torbee 2ffaa';
+            document.getElementById('headerGuyyaa').value = savedHeader.guyyaa || '';
+            document.getElementById('headerOgeessa').value = savedHeader.ogeessa || 'Qajeelaa Hambisaa';
+            document.getElementById('headerGosaHojii').value = savedHeader.gosaHojii || 'Og. Ramaddiifi Hordoffii Beeksisaa';
+        }
+    }
+
+    function saveHeaderInfo() {
+        const headerInfo = {
+            marsaa: document.getElementById('headerMarsaa').value,
+            guyyaa: document.getElementById('headerGuyyaa').value,
+            ogeessa: document.getElementById('headerOgeessa').value,
+            gosaHojii: document.getElementById('headerGosaHojii').value
+        };
+        localStorage.setItem(HEADER_STORAGE_KEY, JSON.stringify(headerInfo));
+    }
+
+    function loadAllTables() {
+        const storedReport = localStorage.getItem(STORAGE_KEY);
+        reportData = storedReport ? JSON.parse(storedReport) : [];
+        renderReportTable();
+
+        const storedPlan = localStorage.getItem(PLAN_STORAGE_KEY);
+        planData = storedPlan ? JSON.parse(storedPlan) : [];
+        renderPlanTable();
+
+        const storedArchives = localStorage.getItem(ARCHIVE_STORAGE_KEY);
+        archives = storedArchives ? JSON.parse(storedArchives) : {};
+    }
+
+    /* ARCHIVE LOGIC */
+    function saveToArchive() {
+        const archiveName = document.getElementById('archiveName').value.trim();
+        if (!archiveName) {
+            alert('Maaloo maqaa torbee galchaa! (e.g. Torbee 3ffaa)');
+            return;
+        }
+
+        archives[archiveName] = {
+            headerInfo: {
+                marsaa: document.getElementById('headerMarsaa').value,
+                guyyaa: document.getElementById('headerGuyyaa').value,
+                ogeessa: document.getElementById('headerOgeessa').value,
+                gosaHojii: document.getElementById('headerGosaHojii').value
+            },
+            reportData: reportData,
+            planData: planData
+        };
+
+        localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(archives));
+        updateArchiveDropdown();
+        document.getElementById('archiveName').value = '';
+        alert(`Daataan '${archiveName}' maqaa jedhuun kuusaa keessatti ol-kaa'ameera!`);
+
+        if (window.syncToFirebase) {
+            window.syncToFirebase(reportData, planData, archives);
+        }
+    }
+
+    function updateArchiveDropdown() {
+        const select = document.getElementById('archiveSelect');
+        select.innerHTML = '<option value="">-- Torbee Filadhu --</option>';
+        for (let key in archives) {
+            let opt = document.createElement('option');
+            opt.value = key;
+            opt.innerHTML = key;
+            select.appendChild(opt);
+        }
+    }
+
+    function loadFromArchive() {
+        const selected = document.getElementById('archiveSelect').value;
+        if (!selected || !archives[selected]) {
+            alert('Maaloo torbee banaa barbaaddan filadhaa!');
+            return;
+        }
+
+        const data = archives[selected];
+        reportData = data.reportData || [];
+        planData = data.planData || [];
+
+        if (data.headerInfo) {
+            document.getElementById('headerMarsaa').value = data.headerInfo.marsaa || selected;
+            document.getElementById('headerGuyyaa').value = data.headerInfo.guyyaa || '';
+            document.getElementById('headerOgeessa').value = data.headerInfo.ogeessa || 'Qajeelaa Hambisaa';
+            document.getElementById('headerGosaHojii').value = data.headerInfo.gosaHojii || 'Og. Ramaddiifi Hordoffii Beeksisaa';
+            saveHeaderInfo();
+        }
+
+        saveAndRender();
+        alert(`Kuusaan '${selected}' jedhu saaqameera!`);
+    }
+
+    /* SECTION A: Raawwii Handlers */
+    function renderReportTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if (reportData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#888;">Daataan raawwii galmaa'e hin jiru. Formii olitti galmeessaa!</td></tr>`;
+            return;
+        }
+
+        reportData.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.guyyaa || '-'}</td>
+                <td>${item.dhaabbata || '-'}</td>
+                <td>${item.gosaHojii || '-'}</td>
+                <td>${item.media || '-'}</td>
+                <td>${item.hanga || '-'}</td>
+                <td>${item.xumura || '-'}</td>
+                <td>${item.haala || '-'}</td>
+                <td class="no-print">
+                    <button class="btn-danger action-btn" onclick="deleteReportRow(${index})">🗑 Balleessi</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function addData() {
+        const newItem = {
+            guyyaa: document.getElementById('guyyaa').value,
+            dhaabbata: document.getElementById('dhaabbata').value,
+            gosaHojii: document.getElementById('gosaHojii').value,
+            media: document.getElementById('media').value,
+            hanga: document.getElementById('hanga').value || '-',
+            xumura: document.getElementById('xumura').value || '-',
+            haala: document.getElementById('haala').value
+        };
+
+        reportData.push(newItem);
+        saveAndRender();
+
+        document.getElementById('guyyaa').value = '';
+        document.getElementById('dhaabbata').value = '';
+        document.getElementById('hanga').value = '';
+        document.getElementById('xumura').value = '';
+    }
+
+    function deleteReportRow(index) {
+        if (confirm('Galmee raawwii kana balleessuu ni barbaaddaa?')) {
+            reportData.splice(index, 1);
+            saveAndRender();
+        }
+    }
+
+    /* SECTION B: Karoora Handlers */
+    function renderPlanTable() {
+        const tbody = document.getElementById('planTableBody');
+        tbody.innerHTML = '';
+
+        if (planData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">Karoorri galmaa'e hin jiru. Formii olitti galmeessaa!</td></tr>`;
+            return;
+        }
+
+        planData.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.hojii || '-'}</td>
+                <td>${item.target || '-'}</td>
+                <td>${item.media || '-'}</td>
+                <td>${item.yaada || '-'}</td>
+                <td class="no-print">
+                    <button class="btn-danger action-btn" onclick="deletePlanRow(${index})">🗑 Balleessi</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function addPlanData() {
+        const newItem = {
+            hojii: document.getElementById('karooraHojii').value,
+            target: document.getElementById('karooraTarget').value,
+            media: document.getElementById('karooraMedia').value,
+            yaada: document.getElementById('karooraYaada').value || '-'
+        };
+
+        planData.push(newItem);
+        saveAndRender();
+
+        document.getElementById('karooraHojii').value = '';
+        document.getElementById('karooraTarget').value = '';
+        document.getElementById('karooraYaada').value = '';
+    }
+
+    function deletePlanRow(index) {
+        if (confirm('Karoora kana balleessuu ni barbaaddaa?')) {
+            planData.splice(index, 1);
+            saveAndRender();
+        }
+    }
+
+    function saveAndRender() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(reportData));
+        localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(planData));
+        renderReportTable();
+        renderPlanTable();
+        
+        if (window.syncToFirebase) {
+            window.syncToFirebase(reportData, planData, archives);
+        }
+    }
+
+    function clearAllData() {
+        if (confirm('Daataa gabatee HUNDA (Raawwii fi Karoora) balleessuu mirkaneessitaa?')) {
+            reportData = [];
+            planData = [];
+            saveAndRender();
+        }
+    }
+
+    /* EXPORT & IMPORT */
+    function exportToJSON() {
+        if (reportData.length === 0 && planData.length === 0) {
+            alert('Daataan olkaa\'amu hin jiru!');
+            return;
+        }
+        const fullBackup = { reportData, planData, archives };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullBackup, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `OBN_Beeksisa_Backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function importFromJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.reportData || imported.planData || imported.archives) {
+                    if (imported.reportData && Array.isArray(imported.reportData)) {
+                        reportData = reportData.concat(imported.reportData);
+                    }
+                    if (imported.planData && Array.isArray(imported.planData)) {
+                        planData = planData.concat(imported.planData);
+                    }
+                    if (imported.archives) {
+                        archives = Object.assign({}, archives, imported.archives);
+                        localStorage.setItem(ARCHIVE_STORAGE_KEY, JSON.stringify(archives));
+                        updateArchiveDropdown();
+                    }
+                } else if (Array.isArray(imported)) {
+                    reportData = reportData.concat(imported);
+                }
+                saveAndRender();
+                alert('Daataan haarawaa milkaa\'inaan itti dabalameera!');
+            } catch (err) {
+                alert('File JSON sirrii miti!');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function exportToCSV() {
+        if (reportData.length === 0 && planData.length === 0) {
+            alert('Daataan Export godhamuu hin jiru!');
+            return;
+        }
+
+        let csvContent = "\uFEFF";
+        csvContent += "--- A. GABAASA RAAWWII ---\n";
+        csvContent += "T.L,Guyyaa (A.L.I),Maqaa Dhaabbata,Gosa Hojii,Media,Hanga Maallaqaa,Yeroo Xumuramu,Haala Tamsaasaa\n";
+
+        reportData.forEach((row, i) => {
+            let rowData = [
+                i + 1,
+                `"${row.guyyaa || ''}"`,
+                `"${row.dhaabbata || ''}"`,
+                `"${row.gosaHojii || ''}"`,
+                `"${row.media || ''}"`,
+                `"${row.hanga || ''}"`,
+                `"${row.xumura || ''}"`,
+                `"${row.haala || ''}"`
+            ];
+            csvContent += rowData.join(",") + "\n";
+        });
+
+        csvContent += "\n--- B. KAROORA HOJII ---\n";
+        csvContent += "T.L,Hojii Karoorfame,Target,Media Focus,Yaada\n";
+        planData.forEach((row, i) => {
+            let rowData = [
+                i + 1,
+                `"${row.hojii || ''}"`,
+                `"${row.target || ''}"`,
+                `"${row.media || ''}"`,
+                `"${row.yaada || ''}"`
+            ];
+            csvContent += rowData.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `OBN_Gabaasa_Beeksisaa_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
